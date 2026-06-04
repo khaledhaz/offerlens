@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OfferLens — True Total Compensation Comparator</title>
+  <meta name="description" content="Compare two job offers by TRUE total compensation — base, bonus, equity, 401k, benefits, and cost of living." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind config must be defined BEFORE the CDN script loads -->
+  <script>
+    window.tailwind = window.tailwind || {};
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            navy: { 900: '#0B1220', 800: '#111827', 700: '#1E2D40' },
+          },
+          borderRadius: { '2xl': '1rem', '3xl': '1.5rem' },
+        },
+      },
+    };
+  </script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- React + ReactDOM + Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* ---------- Base ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      margin: 0;
+      background: #F8FAFC;
+      color: #1E293B;
+      transition: background 0.2s, color 0.2s;
+    }
+    .dark body, body.dark {
+      background: #0B1220;
+      color: #E2E8F0;
+    }
+
+    /* ---------- Dark mode via html.dark ---------- */
+    html.dark body { background: #0B1220; color: #E2E8F0; }
+    html.dark .bg-white { background-color: #1E2D40 !important; }
+    html.dark .bg-gray-50 { background-color: #151E2D !important; }
+    html.dark .text-gray-600 { color: #94A3B8 !important; }
+    html.dark .text-gray-700 { color: #CBD5E1 !important; }
+    html.dark .text-gray-900 { color: #F1F5F9 !important; }
+    html.dark .text-slate-800 { color: #E2E8F0 !important; }
+    html.dark .border-gray-200 { border-color: #2D3D55 !important; }
+    html.dark .shadow-card { box-shadow: 0 2px 24px rgba(0,0,0,0.35) !important; }
+    html.dark input, html.dark select {
+      background-color: #111827 !important;
+      border-color: #2D3D55 !important;
+      color: #E2E8F0 !important;
+    }
+
+    /* ---------- Form inputs ---------- */
+    input, select {
+      font-family: inherit;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 0.5rem;
+      background: #fff;
+      color: #1E293B;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #6366F1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    input.invalid { border-color: #EF4444; }
+    input::placeholder { color: #94A3B8; }
+
+    /* ---------- Button styles ---------- */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366F1, #7C3AED);
+      color: #fff;
+      border: none;
+      border-radius: 0.625rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:focus-visible { outline: 3px solid #6366F1; outline-offset: 2px; }
+
+    .btn-secondary {
+      background: transparent;
+      color: #6366F1;
+      border: 1.5px solid #6366F1;
+      border-radius: 0.625rem;
+      padding: 0.5625rem 1.125rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.15s, transform 0.12s;
+    }
+    .btn-secondary:hover { background: rgba(99,102,241,0.07); transform: translateY(-1px); }
+    .btn-secondary:active { transform: translateY(0); }
+    .btn-secondary:focus-visible { outline: 3px solid #6366F1; outline-offset: 2px; }
+
+    .btn-ghost {
+      background: transparent;
+      border: none;
+      color: #64748B;
+      border-radius: 0.5rem;
+      padding: 0.375rem 0.625rem;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: color 0.15s, background 0.15s;
+    }
+    .btn-ghost:hover { color: #6366F1; background: rgba(99,102,241,0.06); }
+    .btn-ghost:focus-visible { outline: 3px solid #6366F1; outline-offset: 2px; }
+
+    /* ---------- Toggle switch ---------- */
+    .toggle-track {
+      display: inline-flex;
+      align-items: center;
+      width: 2.75rem;
+      height: 1.5rem;
+      border-radius: 9999px;
+      padding: 0.125rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+      flex-shrink: 0;
+    }
+    .toggle-track:focus-visible { outline: 3px solid #6366F1; outline-offset: 2px; }
+    .toggle-on { background: #6366F1; }
+    .toggle-off { background: #CBD5E1; }
+    .toggle-thumb {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      transition: transform 0.2s;
+    }
+    .toggle-on .toggle-thumb { transform: translateX(1.25rem); }
+    .toggle-off .toggle-thumb { transform: translateX(0); }
+
+    /* ---------- Card ---------- */
+    .card {
+      background: #fff;
+      border-radius: 1rem;
+      border: 1px solid #E8EEF4;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      transition: box-shadow 0.2s;
+    }
+    html.dark .card {
+      background: #1E2D40;
+      border-color: #2D3D55;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.3);
+    }
+
+    /* ---------- Winner gradient card ---------- */
+    .winner-card {
+      background: linear-gradient(135deg, #6366F1 0%, #7C3AED 60%, #4F46E5 100%);
+      border-radius: 1rem;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .winner-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ---------- Stat pill ---------- */
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .pill-green { background: rgba(16,185,129,0.12); color: #059669; }
+    .pill-red { background: rgba(239,68,68,0.1); color: #DC2626; }
+    html.dark .pill-green { background: rgba(16,185,129,0.2); color: #34D399; }
+    html.dark .pill-red { background: rgba(239,68,68,0.18); color: #F87171; }
+
+    /* ---------- Number count-up ---------- */
+    @keyframes countUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .count-up { animation: countUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+
+    /* ---------- Smooth fade-in ---------- */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+
+    /* ---------- Offer label accent ---------- */
+    .offer-a-accent { border-left: 4px solid #6366F1; }
+    .offer-b-accent { border-left: 4px solid #7C3AED; }
+
+    /* ---------- Component badge ---------- */
+    .comp-badge {
+      display: inline-block;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ---------- Empty state ---------- */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      gap: 0.75rem;
+      color: #94A3B8;
+    }
+
+    /* ---------- Section divider ---------- */
+    .section-title {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ---------- Tooltip ---------- */
+    .tooltip-wrapper { position: relative; display: inline-flex; align-items: center; }
+    .tooltip-icon {
+      width: 1rem; height: 1rem;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #94A3B8;
+      border: 1.5px solid #CBD5E1;
+      cursor: default;
+      margin-left: 0.25rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .tooltip-bubble {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E293B;
+      color: #fff;
+      padding: 0.4rem 0.7rem;
+      border-radius: 0.4rem;
+      font-size: 0.725rem;
+      line-height: 1.45;
+      white-space: nowrap;
+      max-width: 200px;
+      white-space: normal;
+      pointer-events: none;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    html.dark .tooltip-bubble { background: #334155; }
+
+    /* ---------- Print styles ---------- */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+      .card, .winner-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+      .winner-card { background: #6366F1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #chart-section { page-break-inside: avoid; }
+      #winner-section { page-break-inside: avoid; margin-bottom: 1.5rem; }
+      .print-full { width: 100% !important; max-width: 100% !important; }
+      h1 { font-size: 18pt !important; }
+      #results-section { display: block !important; }
+      input, select, button, .no-print { display: none !important; }
+    }
+
+    /* ---------- Scrollbar (light touch) ---------- */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+    /* ---------- Responsive chart container ---------- */
+    .chart-container { position: relative; width: 100%; }
+    canvas { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+    // =====================================================================
+    // Static Data
+    // =====================================================================
+
+    const COL_INDEX = {
+      "San Francisco, CA": 1.000,
+      "New York City, NY": 0.975,
+      "Seattle, WA": 0.890,
+      "Boston, MA": 0.880,
+      "Washington, DC": 0.855,
+      "Los Angeles, CA": 0.870,
+      "San Diego, CA": 0.840,
+      "Denver, CO": 0.760,
+      "Austin, TX": 0.730,
+      "Chicago, IL": 0.750,
+      "Miami, FL": 0.740,
+      "Portland, OR": 0.800,
+      "Atlanta, GA": 0.680,
+      "Dallas, TX": 0.700,
+      "Phoenix, AZ": 0.700,
+      "Minneapolis, MN": 0.710,
+      "Nashville, TN": 0.680,
+      "Charlotte, NC": 0.660,
+      "Salt Lake City, UT": 0.720,
+      "Remote (US avg)": 0.720,
+    };
+
+    const CITIES = Object.keys(COL_INDEX).sort();
+
+    const COMP_COLORS = {
+      base: '#6366F1',
+      bonus: '#8B5CF6',
+      equity: '#06B6D4',
+      match401k: '#10B981',
+      signing: '#F59E0B',
+      pto: '#F97316',
+      healthDeduction: '#EF4444',
+    };
+
+    const COMP_LABELS = {
+      base: 'Base Salary',
+      bonus: 'Annual Bonus',
+      equity: 'Equity/RSU (annualized)',
+      match401k: '401k Match',
+      signing: 'Signing Bonus',
+      pto: 'PTO Value',
+      healthDeduction: 'Health Premium (cost)',
+    };
+
+    // =====================================================================
+    // Utilities
+    // =====================================================================
+
+    function fmt(n) {
+      if (typeof n !== 'number' || isNaN(n)) return '$0';
+      const abs = Math.abs(n);
+      const sign = n < 0 ? '-' : '';
+      return sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function fmtPct(n) {
+      if (typeof n !== 'number' || isNaN(n)) return '0%';
+      return n.toFixed(1).replace(/\.0$/, '') + '%';
+    }
+
+    function safeNum(val, fallback = 0) {
+      const n = parseFloat(String(val).replace(/[,$]/g, ''));
+      return isNaN(n) ? fallback : n;
+    }
+
+    function isValidNum(val) {
+      const n = parseFloat(String(val).replace(/[,$]/g, ''));
+      return !isNaN(n) && n >= 0;
+    }
+
+    // =====================================================================
+    // Computation Engine
+    // =====================================================================
+
+    function computeOffer(offer, year, colFactor = 1) {
+      const base = safeNum(offer.base);
+      if (base <= 0) return null;
+
+      const bonusRaw = safeNum(offer.bonus);
+      const bonusIsPercent = offer.bonusType === 'percent';
+      const annualBonus = bonusIsPercent ? base * (bonusRaw / 100) : bonusRaw;
+
+      const equity4yr = safeNum(offer.equity);
+      const equityAnnual = equity4yr / 4;
+      // Year 1 typically has no cliff vested, but we show the annualized value
+      // Year 2 = after first vest, Year 4 = full run-rate
+      const equityForYear = year === 1 ? 0 : equityAnnual;
+
+      const match401kPct = safeNum(offer.match401k);
+      const match401kValue = base * (match401kPct / 100);
+
+      const signing = year === 1 ? safeNum(offer.signing) : 0;
+
+      const ptoDays = safeNum(offer.pto);
+      const ptoValue = ptoDays > 0 ? base / 260 * ptoDays : 0;
+
+      const healthPremium = safeNum(offer.health);
+
+      const components = {
+        base,
+        bonus: annualBonus,
+        equity: equityForYear,
+        match401k: match401kValue,
+        signing,
+        pto: ptoValue,
+        healthDeduction: healthPremium,
+      };
+
+      const total = (base + annualBonus + equityForYear + match401kValue + signing + ptoValue - healthPremium) / colFactor;
+
+      return { total, components };
+    }
+
+    function getBiggestDriver(offerA, offerB, yearCalcA, yearCalcB) {
+      if (!yearCalcA || !yearCalcB) return '';
+      const winner = yearCalcA.total >= yearCalcB.total ? 'A' : 'B';
+      const winnerCalc = winner === 'A' ? yearCalcA : yearCalcB;
+      const loserCalc = winner === 'A' ? yearCalcB : yearCalcA;
+
+      let maxDiff = 0;
+      let maxKey = 'base';
+
+      const keys = ['base', 'bonus', 'equity', 'match401k', 'signing', 'pto'];
+      for (const k of keys) {
+        const diff = Math.abs((winnerCalc.components[k] || 0) - (loserCalc.components[k] || 0));
+        if (diff > maxDiff) { maxDiff = diff; maxKey = k; }
+      }
+
+      const nameA = offerA.name || 'Offer A';
+      const nameB = offerB.name || 'Offer B';
+      const winnerName = winner === 'A' ? nameA : nameB;
+
+      return `The biggest driver is ${COMP_LABELS[maxKey].toLowerCase()} — ${winnerName} leads by ${fmt(maxDiff)} on this component.`;
+    }
+
+    // =====================================================================
+    // Default Offer State
+    // =====================================================================
+
+    const DEFAULT_OFFER = {
+      name: '',
+      base: '',
+      bonus: '',
+      bonusType: 'percent',
+      equity: '',
+      match401k: '',
+      signing: '',
+      health: '',
+      pto: '',
+      city: 'San Francisco, CA',
+    };
+
+    // =====================================================================
+    // useCountUp hook
+    // =====================================================================
+
+    function useCountUp(target, duration = 400) {
+      const [display, setDisplay] = useState(target);
+      const rafRef = useRef(null);
+      const startRef = useRef(null);
+      const fromRef = useRef(target);
+
+      useEffect(() => {
+        const from = fromRef.current;
+        const to = target;
+        if (from === to) return;
+
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        startRef.current = null;
+
+        const step = (ts) => {
+          if (!startRef.current) startRef.current = ts;
+          const progress = Math.min((ts - startRef.current) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const current = Math.round(from + (to - from) * eased);
+          setDisplay(current);
+          if (progress < 1) {
+            rafRef.current = requestAnimationFrame(step);
+          } else {
+            fromRef.current = to;
+          }
+        };
+        rafRef.current = requestAnimationFrame(step);
+        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+      }, [target, duration]);
+
+      return display;
+    }
+
+    // =====================================================================
+    // Tooltip component
+    // =====================================================================
+
+    function Tooltip({ text }) {
+      const [show, setShow] = useState(false);
+      return (
+        <span className="tooltip-wrapper">
+          <span
+            className="tooltip-icon"
+            aria-label={`Info: ${text}`}
+            role="tooltip"
+            tabIndex={0}
+            onMouseEnter={() => setShow(true)}
+            onMouseLeave={() => setShow(false)}
+            onFocus={() => setShow(true)}
+            onBlur={() => setShow(false)}
+          >?</span>
+          {show && <span className="tooltip-bubble" role="status">{text}</span>}
+        </span>
+      );
+    }
+
+    // =====================================================================
+    // Toggle component
+    // =====================================================================
+
+    function Toggle({ checked, onChange, label, id }) {
+      return (
+        <label htmlFor={id} className="flex items-center gap-2 cursor-pointer select-none" style={{fontSize:'0.875rem'}}>
+          <button
+            id={id}
+            role="switch"
+            aria-checked={checked}
+            aria-label={label}
+            className={`toggle-track ${checked ? 'toggle-on' : 'toggle-off'}`}
+            onClick={() => onChange(!checked)}
+            type="button"
+          >
+            <span className="toggle-thumb" aria-hidden="true" />
+          </button>
+          <span className="text-gray-700 font-medium">{label}</span>
+        </label>
+      );
+    }
+
+    // =====================================================================
+    // InputField component
+    // =====================================================================
+
+    function InputField({ label, id, value, onChange, placeholder, type = 'text', suffix, prefix, tooltip, optional = true }) {
+      const invalid = value !== '' && !isValidNum(value);
+      return (
+        <div className="mb-3">
+          <label htmlFor={id} className="flex items-center gap-1 mb-1" style={{fontSize:'0.775rem', fontWeight:600, color:'#64748B', letterSpacing:'0.02em'}}>
+            {label}
+            {optional && <span style={{fontSize:'0.65rem', color:'#94A3B8', fontWeight:400}}>(optional)</span>}
+            {tooltip && <Tooltip text={tooltip} />}
+          </label>
+          <div className="relative flex items-center">
+            {prefix && (
+              <span className="absolute left-2.5 text-gray-500" style={{fontSize:'0.875rem', pointerEvents:'none'}} aria-hidden="true">{prefix}</span>
+            )}
+            <input
+              id={id}
+              type={type}
+              inputMode="decimal"
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              placeholder={placeholder}
+              className={invalid ? 'invalid' : ''}
+              style={{ paddingLeft: prefix ? '1.75rem' : '0.75rem', paddingRight: suffix ? '2.25rem' : '0.75rem' }}
+              aria-invalid={invalid}
+              aria-describedby={invalid ? `${id}-error` : undefined}
+            />
+            {suffix && (
+              <span className="absolute right-2.5 text-gray-500" style={{fontSize:'0.8rem', pointerEvents:'none'}} aria-hidden="true">{suffix}</span>
+            )}
+          </div>
+          {invalid && (
+            <span id={`${id}-error`} role="alert" style={{fontSize:'0.7rem', color:'#EF4444', marginTop:'0.2rem', display:'block'}}>
+              Please enter a valid number
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // =====================================================================
+    // OfferCard component
+    // =====================================================================
+
+    function OfferCard({ offer, onChange, label, accentClass, colNormalize }) {
+      const prefix = offer.id;
+
+      function field(key) {
+        return (val) => onChange({ ...offer, [key]: val });
+      }
+
+      return (
+        <section className={`card p-5 ${accentClass}`} aria-label={`${label} inputs`}>
+          <div className="section-title">{label}</div>
+
+          {/* Company name */}
+          <div className="mb-4">
+            <label htmlFor={`${prefix}-name`} className="flex items-center gap-1 mb-1" style={{fontSize:'0.775rem', fontWeight:600, color:'#64748B', letterSpacing:'0.02em'}}>
+              Company Name
+            </label>
+            <input
+              id={`${prefix}-name`}
+              type="text"
+              value={offer.name}
+              onChange={e => onChange({ ...offer, name: e.target.value })}
+              placeholder="e.g. Acme Corp"
+              aria-label="Company name"
+            />
+          </div>
+
+          <InputField
+            label="Base Salary"
+            id={`${prefix}-base`}
+            value={offer.base}
+            onChange={field('base')}
+            placeholder="e.g. 180000"
+            prefix="$"
+            optional={false}
+            tooltip="Annual gross base salary before tax"
+          />
+
+          {/* Bonus row */}
+          <div className="mb-3">
+            <label className="flex items-center gap-1 mb-1" style={{fontSize:'0.775rem', fontWeight:600, color:'#64748B', letterSpacing:'0.02em'}}>
+              Annual Bonus <span style={{fontSize:'0.65rem', color:'#94A3B8', fontWeight:400}}>(optional)</span>
+              <Tooltip text="Target annual bonus. Enter as % of base or flat $ amount." />
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex items-center flex-1">
+                {offer.bonusType === 'dollar' && (
+                  <span className="absolute left-2.5 text-gray-500" style={{fontSize:'0.875rem', pointerEvents:'none'}} aria-hidden="true">$</span>
+                )}
+                <input
+                  id={`${prefix}-bonus`}
+                  type="text"
+                  inputMode="decimal"
+                  value={offer.bonus}
+                  onChange={e => onChange({ ...offer, bonus: e.target.value })}
+                  placeholder={offer.bonusType === 'percent' ? 'e.g. 15' : 'e.g. 30000'}
+                  style={{ paddingLeft: offer.bonusType === 'dollar' ? '1.75rem' : '0.75rem', paddingRight: offer.bonusType === 'percent' ? '2.25rem' : '0.75rem' }}
+                  aria-label="Annual bonus amount"
+                />
+                {offer.bonusType === 'percent' && (
+                  <span className="absolute right-2.5 text-gray-500" style={{fontSize:'0.8rem', pointerEvents:'none'}} aria-hidden="true">%</span>
+                )}
+              </div>
+              <select
+                value={offer.bonusType}
+                onChange={e => onChange({ ...offer, bonusType: e.target.value })}
+                aria-label="Bonus type: percent or dollar"
+                style={{width:'6rem', flexShrink:0}}
+              >
+                <option value="percent">% of base</option>
+                <option value="dollar">Flat $</option>
+              </select>
+            </div>
+          </div>
+
+          <InputField
+            label="Equity / RSU (4-year total)"
+            id={`${prefix}-equity`}
+            value={offer.equity}
+            onChange={field('equity')}
+            placeholder="e.g. 200000"
+            prefix="$"
+            tooltip="Total 4-year vesting grant. Year 1 shows $0 (cliff); Years 2–4 annualize to grant÷4."
+          />
+
+          <InputField
+            label="401k Employer Match"
+            id={`${prefix}-match`}
+            value={offer.match401k}
+            onChange={field('match401k')}
+            placeholder="e.g. 6"
+            suffix="%"
+            tooltip="Employer match as % of base salary"
+          />
+
+          <InputField
+            label="Signing Bonus"
+            id={`${prefix}-signing`}
+            value={offer.signing}
+            onChange={field('signing')}
+            placeholder="e.g. 25000"
+            prefix="$"
+            tooltip="One-time signing bonus (counted in Year 1 only)"
+          />
+
+          <InputField
+            label="Annual Health Premium"
+            id={`${prefix}-health`}
+            value={offer.health}
+            onChange={field('health')}
+            placeholder="e.g. 3600"
+            prefix="$"
+            tooltip="Employee's annual out-of-pocket health insurance cost — subtracted from total comp"
+          />
+
+          <InputField
+            label="PTO Days / Year"
+            id={`${prefix}-pto`}
+            value={offer.pto}
+            onChange={field('pto')}
+            placeholder="e.g. 20"
+            tooltip="Valued at base÷260 per day"
+          />
+
+          {colNormalize && (
+            <div className="mt-4">
+              <label htmlFor={`${prefix}-city`} className="flex items-center gap-1 mb-1" style={{fontSize:'0.775rem', fontWeight:600, color:'#64748B', letterSpacing:'0.02em'}}>
+                Location (COL index)
+              </label>
+              <select
+                id={`${prefix}-city`}
+                value={offer.city}
+                onChange={e => onChange({ ...offer, city: e.target.value })}
+                aria-label="City for cost-of-living normalization"
+              >
+                {CITIES.map(c => (
+                  <option key={c} value={c}>{c} ({fmtPct(COL_INDEX[c] * 100)})</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </section>
+      );
+    }
+
+    // =====================================================================
+    // YearBreakdown row
+    // =====================================================================
+
+    function YearRow({ year, label, calcA, calcB, nameA, nameB }) {
+      const valA = calcA ? calcA.total : 0;
+      const valB = calcB ? calcB.total : 0;
+      const diff = valA - valB;
+      const pct = valB > 0 ? ((valA - valB) / valB) * 100 : 0;
+
+      return (
+        <tr style={{borderBottom:'1px solid #E8EEF4'}} className="hover:bg-gray-50 transition-colors">
+          <td className="py-2.5 px-3" style={{fontSize:'0.825rem', color:'#64748B', fontWeight:500, whiteSpace:'nowrap'}}>{label}</td>
+          <td className="py-2.5 px-3 text-right font-semibold tabular-nums" style={{fontSize:'0.9rem', color:calcA ? '#6366F1' : '#94A3B8'}}>
+            {calcA ? fmt(valA) : <span style={{color:'#CBD5E1'}}>—</span>}
+          </td>
+          <td className="py-2.5 px-3 text-right font-semibold tabular-nums" style={{fontSize:'0.9rem', color:calcB ? '#7C3AED' : '#94A3B8'}}>
+            {calcB ? fmt(valB) : <span style={{color:'#CBD5E1'}}>—</span>}
+          </td>
+          <td className="py-2.5 px-3 text-right" style={{minWidth:'90px'}}>
+            {(calcA && calcB) ? (
+              <span className={`stat-pill ${diff > 0 ? 'pill-green' : diff < 0 ? 'pill-red' : ''}`} style={diff === 0 ? {background:'#F1F5F9',color:'#64748B'} : {}}>
+                {diff > 0 ? '▲' : diff < 0 ? '▼' : '='} {diff !== 0 ? fmtPct(Math.abs(pct)) : 'Tie'}
+              </span>
+            ) : null}
+          </td>
+        </tr>
+      );
+    }
+
+    // =====================================================================
+    // CompChart component
+    // =====================================================================
+
+    function CompChart({ calcA1, calcB1, calcA4, calcB4, nameA, nameB, isDark }) {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+      const chartAvailable = typeof Chart !== 'undefined';
+
+      const hasData = (calcA1 && calcA1.total > 0) || (calcB1 && calcB1.total > 0);
+
+      useEffect(() => {
+        if (!hasData) return;
+        if (!chartAvailable) return;
+
+        if (chartRef.current) {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const labels = [
+          nameA ? `${nameA} (Yr 1)` : 'Offer A (Yr 1)',
+          nameB ? `${nameB} (Yr 1)` : 'Offer B (Yr 1)',
+          nameA ? `${nameA} (Yr 4)` : 'Offer A (Yr 4)',
+          nameB ? `${nameB} (Yr 4)` : 'Offer B (Yr 4)',
+        ];
+
+        function getComp(calc, key) {
+          if (!calc) return 0;
+          const v = calc.components[key] || 0;
+          return key === 'healthDeduction' ? -Math.abs(v) : Math.max(0, v);
+        }
+
+        const positiveKeys = ['base', 'bonus', 'equity', 'match401k', 'signing', 'pto'];
+        const negativeKeys = ['healthDeduction'];
+
+        const positiveDatasets = positiveKeys.map(key => ({
+          label: COMP_LABELS[key],
+          data: [
+            getComp(calcA1, key),
+            getComp(calcB1, key),
+            getComp(calcA4, key),
+            getComp(calcB4, key),
+          ],
+          backgroundColor: COMP_COLORS[key],
+          borderRadius: 4,
+          borderSkipped: false,
+        }));
+
+        const negativeDatasets = negativeKeys.map(key => ({
+          label: COMP_LABELS[key],
+          data: [
+            getComp(calcA1, key),
+            getComp(calcB1, key),
+            getComp(calcA4, key),
+            getComp(calcB4, key),
+          ],
+          backgroundColor: COMP_COLORS[key],
+          borderRadius: 4,
+          borderSkipped: false,
+        }));
+
+        const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+        const textColor = isDark ? '#94A3B8' : '#64748B';
+
+        chartRef.current = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [...positiveDatasets, ...negativeDatasets] },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400, easing: 'easeOutCubic' },
+            interaction: { mode: 'index', axis: 'y' },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'rect',
+                  font: { family: 'Inter', size: 11 },
+                  color: textColor,
+                  padding: 14,
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`,
+                },
+                backgroundColor: isDark ? '#1E2D40' : '#1E293B',
+                titleColor: '#E2E8F0',
+                bodyColor: '#CBD5E1',
+                borderColor: isDark ? '#2D3D55' : 'transparent',
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8,
+                titleFont: { family: 'Inter', weight: '600', size: 12 },
+                bodyFont: { family: 'Inter', size: 11.5 },
+              },
+            },
+            scales: {
+              x: {
+                stacked: true,
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  font: { family: 'Inter', size: 11 },
+                  callback: val => val >= 1000 ? `$${(val/1000).toFixed(0)}k` : `$${val}`,
+                },
+                border: { display: false },
+              },
+              y: {
+                stacked: true,
+                grid: { display: false },
+                ticks: {
+                  color: textColor,
+                  font: { family: 'Inter', size: 11.5, weight: '500' },
+                },
+                border: { display: false },
+              },
+            },
+          },
+        });
+
+        return () => {
+          if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+        };
+      }, [calcA1, calcB1, calcA4, calcB4, nameA, nameB, isDark, hasData, chartAvailable]);
+
+      if (!hasData) {
+        return (
+          <div className="empty-state" style={{minHeight:'220px'}}>
+            <svg width="48" height="48" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+              <rect x="6" y="28" width="8" height="14" rx="2" fill="#CBD5E1"/>
+              <rect x="20" y="18" width="8" height="24" rx="2" fill="#CBD5E1"/>
+              <rect x="34" y="10" width="8" height="32" rx="2" fill="#CBD5E1"/>
+            </svg>
+            <p style={{fontSize:'0.875rem'}}>Enter a base salary for at least one offer to see the chart</p>
+          </div>
+        );
+      }
+
+      if (!chartAvailable) {
+        return (
+          <div className="empty-state" style={{minHeight:'220px'}}>
+            <p style={{fontSize:'0.875rem', color:'#94A3B8'}}>
+              Chart unavailable — Chart.js CDN could not be loaded.
+              All compensation calculations above remain accurate.
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="chart-container" style={{height: '300px'}}>
+          <canvas ref={canvasRef} role="img" aria-label="Stacked bar chart comparing total compensation components for both offers across Year 1 and Year 4" />
+        </div>
+      );
+    }
+
+    // =====================================================================
+    // WinnerCard component
+    // =====================================================================
+
+    function WinnerCard({ calcA, calcB, nameA, nameB, offerA, offerB, year = 2 }) {
+      const valA = calcA ? calcA.total : 0;
+      const valB = calcB ? calcB.total : 0;
+      const hasA = calcA !== null;
+      const hasB = calcB !== null;
+
+      const winnerLabel = valA >= valB ? (nameA || 'Offer A') : (nameB || 'Offer B');
+      const diff = Math.abs(valA - valB);
+      const loserVal = Math.min(valA, valB);
+      const pct = loserVal > 0 ? (diff / loserVal) * 100 : 0;
+
+      const countedDiff = useCountUp(Math.round(diff), 500);
+      const countedA = useCountUp(Math.round(valA), 500);
+      const countedB = useCountUp(Math.round(valB), 500);
+
+      const driver = getBiggestDriver(offerA, offerB, calcA, calcB);
+
+      if (!hasA && !hasB) {
+        return (
+          <div className="card p-6 empty-state" aria-live="polite" aria-atomic="true">
+            <svg width="48" height="48" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#CBD5E1" strokeWidth="2.5"/>
+              <path d="M16 24h16M24 16v16" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+            <p className="text-gray-700" style={{fontSize:'0.875rem', fontWeight:500}}>Enter base salaries for both offers to see who wins</p>
+          </div>
+        );
+      }
+
+      if (!hasA || !hasB) {
+        return (
+          <div className="card p-6 empty-state" aria-live="polite" aria-atomic="true">
+            <p className="text-gray-700" style={{fontSize:'0.875rem', fontWeight:500}}>Enter base salary for both offers to compare</p>
+          </div>
+        );
+      }
+
+      const isTie = diff < 100;
+
+      return (
+        <div className="winner-card p-6 fade-in" role="region" aria-label="Winner comparison result" aria-live="polite" aria-atomic="true">
+          <div style={{position:'relative', zIndex:1}}>
+            {isTie ? (
+              <div style={{fontSize:'1.4rem', fontWeight:800, marginBottom:'0.5rem'}}>
+                It's a Tie!
+              </div>
+            ) : (
+              <>
+                <div style={{fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', opacity:0.8, marginBottom:'0.4rem'}}>
+                  Year {year} winner
+                </div>
+                <div style={{fontSize:'1.6rem', fontWeight:800, lineHeight:1.2, marginBottom:'0.25rem'}}>
+                  {winnerLabel} wins
+                </div>
+                <div className="count-up" style={{fontSize:'2.2rem', fontWeight:800, letterSpacing:'-0.02em', marginBottom:'0.3rem'}}>
+                  ${countedDiff.toLocaleString()}/yr
+                </div>
+                <div style={{fontSize:'0.95rem', opacity:0.9, marginBottom:'1rem'}}>
+                  {fmtPct(pct)} more total compensation
+                </div>
+              </>
+            )}
+
+            <div style={{display:'flex', gap:'1rem', flexWrap:'wrap', marginBottom:'1rem'}}>
+              {[
+                { name: nameA || 'Offer A', val: countedA, isWinner: valA >= valB },
+                { name: nameB || 'Offer B', val: countedB, isWinner: valB > valA },
+              ].map(({name, val, isWinner}) => (
+                <div key={name} style={{
+                  background: isWinner ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
+                  borderRadius:'0.625rem',
+                  padding:'0.625rem 1rem',
+                  flex:1,
+                  minWidth:'120px',
+                  border: isWinner ? '1.5px solid rgba(255,255,255,0.35)' : '1.5px solid rgba(255,255,255,0.1)',
+                }}>
+                  <div style={{fontSize:'0.7rem', fontWeight:700, opacity:0.75, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.15rem'}}>{name}</div>
+                  <div style={{fontSize:'1.15rem', fontWeight:700, letterSpacing:'-0.01em'}}>${val.toLocaleString()}</div>
+                  {isWinner && !isTie && <div style={{fontSize:'0.65rem', marginTop:'0.15rem', opacity:0.85}}>Winner</div>}
+                </div>
+              ))}
+            </div>
+
+            {driver && (
+              <p style={{fontSize:'0.8125rem', opacity:0.85, lineHeight:1.5, fontStyle:'italic'}}>
+                {driver}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================================
+    // Main App
+    // =====================================================================
+
+    const STORAGE_KEY = 'offerlens-theme';
+
+    function App() {
+      // Theme
+      const [isDark, setIsDark] = useState(() => {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored !== null) return stored === 'dark';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      });
+
+      // COL normalization
+      const [colNormalize, setColNormalize] = useState(false);
+
+      // Offers
+      const [offerA, setOfferA] = useState({ ...DEFAULT_OFFER, id: 'a', city: 'San Francisco, CA' });
+      const [offerB, setOfferB] = useState({ ...DEFAULT_OFFER, id: 'b', city: 'Austin, TX' });
+
+      // Copy link state
+      const [copied, setCopied] = useState(false);
+
+      // Comparison year for winner card
+      const [compareYear, setCompareYear] = useState(2);
+
+      // Apply dark class to html element
+      useEffect(() => {
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem(STORAGE_KEY, isDark ? 'dark' : 'light');
+      }, [isDark]);
+
+      // Restore from hash on mount
+      useEffect(() => {
+        const hash = window.location.hash.slice(1);
+        if (!hash) return;
+        try {
+          const data = JSON.parse(atob(hash));
+          if (data.offerA) setOfferA({ ...DEFAULT_OFFER, id: 'a', ...data.offerA });
+          if (data.offerB) setOfferB({ ...DEFAULT_OFFER, id: 'b', ...data.offerB });
+          if (typeof data.colNormalize === 'boolean') setColNormalize(data.colNormalize);
+          if (typeof data.isDark === 'boolean') setIsDark(data.isDark);
+        } catch (e) {
+          // Malformed hash — ignore
+        }
+      }, []);
+
+      // Compute results
+      const colA = colNormalize ? (COL_INDEX[offerA.city] || 1) : 1;
+      const colB = colNormalize ? (COL_INDEX[offerB.city] || 1) : 1;
+      const sfBase = 1; // normalize to SF equivalent
+
+      const calcA1 = useMemo(() => computeOffer(offerA, 1, colA), [offerA, colA]);
+      const calcA2 = useMemo(() => computeOffer(offerA, 2, colA), [offerA, colA]);
+      const calcA4 = useMemo(() => computeOffer(offerA, 4, colA), [offerA, colA]);
+
+      const calcB1 = useMemo(() => computeOffer(offerB, 1, colB), [offerB, colB]);
+      const calcB2 = useMemo(() => computeOffer(offerB, 2, colB), [offerB, colB]);
+      const calcB4 = useMemo(() => computeOffer(offerB, 4, colB), [offerB, colB]);
+
+      const winnerCalcA = compareYear === 1 ? calcA1 : compareYear === 2 ? calcA2 : calcA4;
+      const winnerCalcB = compareYear === 1 ? calcB1 : compareYear === 2 ? calcB2 : calcB4;
+
+      const nameA = offerA.name || 'Offer A';
+      const nameB = offerB.name || 'Offer B';
+
+      // Share URL
+      function handleCopyLink() {
+        const payload = { offerA, offerB, colNormalize, isDark };
+        const hash = btoa(JSON.stringify(payload));
+        const url = window.location.origin + window.location.pathname + '#' + hash;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }).catch(() => fallbackCopy(url));
+        } else {
+          fallbackCopy(url);
+        }
+      }
+
+      function fallbackCopy(url) {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+
+      function handlePrint() {
+        window.print();
+      }
+
+      function handleReset() {
+        setOfferA({ ...DEFAULT_OFFER, id: 'a', city: 'San Francisco, CA' });
+        setOfferB({ ...DEFAULT_OFFER, id: 'b', city: 'Austin, TX' });
+        setColNormalize(false);
+        window.location.hash = '';
+      }
+
+      const hasAnyData = safeNum(offerA.base) > 0 || safeNum(offerB.base) > 0;
+
+      return (
+        <div style={{minHeight:'100vh', display:'flex', flexDirection:'column'}}>
+
+          {/* ===== Header ===== */}
+          <header className="no-print" style={{
+            background: isDark ? '#111827' : '#fff',
+            borderBottom: `1px solid ${isDark ? '#1E2D40' : '#E8EEF4'}`,
+            boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+            position:'sticky', top:0, zIndex:40,
+          }}>
+            <div style={{maxWidth:'1200px', margin:'0 auto', padding:'0 1.25rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:'60px'}}>
+              {/* Logo */}
+              <div style={{display:'flex', alignItems:'center', gap:'0.625rem'}}>
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                  <rect width="32" height="32" rx="8" fill="url(#logo-grad)"/>
+                  <circle cx="13" cy="14" r="5" stroke="#fff" strokeWidth="2.2" fill="none"/>
+                  <line x1="17" y1="18" x2="23" y2="24" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/>
+                  <line x1="9" y1="9" x2="13" y2="13" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <defs>
+                    <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32">
+                      <stop stopColor="#6366F1"/>
+                      <stop offset="1" stopColor="#7C3AED"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div>
+                  <div style={{fontSize:'1.1rem', fontWeight:800, background:'linear-gradient(135deg,#6366F1,#7C3AED)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:'-0.02em', lineHeight:1.2}}>OfferLens</div>
+                  <div style={{fontSize:'0.65rem', color:'#94A3B8', fontWeight:500, lineHeight:1.2}}>True Total Compensation</div>
+                </div>
+              </div>
+
+              {/* Header actions */}
+              <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                <button
+                  className="btn-ghost no-print"
+                  onClick={handleReset}
+                  aria-label="Reset all inputs"
+                  title="Reset"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                  </svg>
+                  Reset
+                </button>
+
+                <button
+                  className="btn-ghost no-print"
+                  onClick={handleCopyLink}
+                  aria-label={copied ? 'Link copied!' : 'Copy shareable link'}
+                >
+                  {copied ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                      </svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+                        <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+                      </svg>
+                      Share
+                    </>
+                  )}
+                </button>
+
+                <button
+                  className="btn-ghost no-print"
+                  onClick={handlePrint}
+                  aria-label="Print or save as PDF"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                  </svg>
+                  Print PDF
+                </button>
+
+                <button
+                  className="btn-ghost"
+                  onClick={() => setIsDark(d => !d)}
+                  aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {isDark ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* ===== Main Content ===== */}
+          <main style={{flex:1, maxWidth:'1200px', margin:'0 auto', width:'100%', padding:'1.5rem 1.25rem 3rem'}} id="main-content">
+
+            {/* Hero tagline */}
+            <div className="no-print" style={{textAlign:'center', marginBottom:'2rem', paddingTop:'0.5rem'}}>
+              <h1 style={{
+                fontSize:'clamp(1.5rem,4vw,2.25rem)',
+                fontWeight:800,
+                letterSpacing:'-0.03em',
+                background:'linear-gradient(135deg,#6366F1 0%,#7C3AED 50%,#4F46E5 100%)',
+                WebkitBackgroundClip:'text',
+                WebkitTextFillColor:'transparent',
+                marginBottom:'0.5rem',
+                lineHeight:1.2,
+              }}>
+                Compare job offers by what actually matters
+              </h1>
+              <p style={{fontSize:'1rem', color:'#64748B', maxWidth:'520px', margin:'0 auto', lineHeight:1.6}}>
+                Base salary is just the start. OfferLens calculates true total compensation — equity, bonuses, benefits, PTO, and cost of living — across multiple years.
+              </p>
+            </div>
+
+            {/* Controls bar */}
+            <div className="no-print card p-4 mb-5" style={{display:'flex', alignItems:'center', flexWrap:'wrap', gap:'1.25rem'}}>
+              <Toggle
+                id="col-toggle"
+                checked={colNormalize}
+                onChange={setColNormalize}
+                label="Normalize by cost of living"
+              />
+              <div style={{height:'24px', width:'1px', background:'#E8EEF4', flexShrink:0}} aria-hidden="true" />
+              <div style={{display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.875rem'}}>
+                <span className="text-gray-700 font-medium" style={{whiteSpace:'nowrap'}}>Compare at year:</span>
+                <div role="group" aria-label="Select comparison year" style={{display:'flex', gap:'0.375rem'}}>
+                  {[1, 2, 4].map(y => (
+                    <button
+                      key={y}
+                      onClick={() => setCompareYear(y)}
+                      className={compareYear === y ? 'btn-primary' : 'btn-secondary'}
+                      style={{padding:'0.3rem 0.75rem', fontSize:'0.8rem'}}
+                      aria-pressed={compareYear === y}
+                      aria-label={`Compare at year ${y}`}
+                    >Yr {y}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{marginLeft:'auto', display:'flex', gap:'0.625rem'}} className="no-print">
+                <button className="btn-primary" onClick={handleCopyLink} aria-label={copied ? 'Link copied' : 'Copy share link'}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+                    <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+                  </svg>
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </button>
+                <button className="btn-secondary" onClick={handlePrint} aria-label="Print or save as PDF">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                  </svg>
+                  Print PDF
+                </button>
+              </div>
+            </div>
+
+            {/* Offer input cards grid */}
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'1.25rem', marginBottom:'1.5rem'}}>
+              <OfferCard
+                offer={offerA}
+                onChange={setOfferA}
+                label="Offer A"
+                accentClass="offer-a-accent"
+                colNormalize={colNormalize}
+              />
+              <OfferCard
+                offer={offerB}
+                onChange={setOfferB}
+                label="Offer B"
+                accentClass="offer-b-accent"
+                colNormalize={colNormalize}
+              />
+            </div>
+
+            {/* ===== Results section ===== */}
+            <div id="results-section">
+
+              {/* Winner card */}
+              <div id="winner-section" style={{marginBottom:'1.5rem'}}>
+                <WinnerCard
+                  calcA={winnerCalcA}
+                  calcB={winnerCalcB}
+                  nameA={nameA}
+                  nameB={nameB}
+                  offerA={offerA}
+                  offerB={offerB}
+                  year={compareYear}
+                />
+              </div>
+
+              {/* Year-by-year breakdown table */}
+              {hasAnyData && (
+                <div className="card mb-5" style={{overflowX:'auto'}}>
+                  <div className="p-4 pb-2">
+                    <h2 style={{fontSize:'0.875rem', fontWeight:700, marginBottom:0, color: isDark ? '#E2E8F0' : '#1E293B'}}>
+                      Year-by-Year Breakdown
+                    </h2>
+                    <p style={{fontSize:'0.75rem', color:'#94A3B8', marginTop:'0.2rem'}}>
+                      {colNormalize ? 'Adjusted to San Francisco purchasing power equivalent' : 'Nominal values — enable COL normalization to compare purchasing power'}
+                    </p>
+                  </div>
+                  <table style={{width:'100%', borderCollapse:'collapse'}} role="table" aria-label="Year-by-year total compensation breakdown">
+                    <thead>
+                      <tr style={{borderBottom:'2px solid #E8EEF4', background: isDark ? '#1a2535' : '#F8FAFC'}}>
+                        <th className="py-2.5 px-3 text-left" style={{fontSize:'0.75rem', fontWeight:700, color:'#94A3B8', letterSpacing:'0.05em', textTransform:'uppercase'}}>Period</th>
+                        <th className="py-2.5 px-3 text-right" style={{fontSize:'0.75rem', fontWeight:700, color:'#6366F1', letterSpacing:'0.05em', textTransform:'uppercase'}}>{nameA}</th>
+                        <th className="py-2.5 px-3 text-right" style={{fontSize:'0.75rem', fontWeight:700, color:'#7C3AED', letterSpacing:'0.05em', textTransform:'uppercase'}}>{nameB}</th>
+                        <th className="py-2.5 px-3 text-right" style={{fontSize:'0.75rem', fontWeight:700, color:'#94A3B8', letterSpacing:'0.05em', textTransform:'uppercase'}}>Diff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <YearRow year={1} label="Year 1 (with signing)" calcA={calcA1} calcB={calcB1} nameA={nameA} nameB={nameB} />
+                      <YearRow year={2} label="Year 2 (post-cliff)" calcA={calcA2} calcB={calcB2} nameA={nameA} nameB={nameB} />
+                      <YearRow year={4} label="Year 4 (full equity run-rate)" calcA={calcA4} calcB={calcB4} nameA={nameA} nameB={nameB} />
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Chart */}
+              <div id="chart-section" className="card p-5 mb-5">
+                <h2 style={{fontSize:'0.875rem', fontWeight:700, marginBottom:'0.25rem', color: isDark ? '#E2E8F0' : '#1E293B'}}>
+                  Compensation Breakdown
+                </h2>
+                <p style={{fontSize:'0.75rem', color:'#94A3B8', marginBottom:'1.25rem'}}>
+                  Stacked by component — Year 1 and Year 4. Health premium shown as negative.
+                </p>
+                <CompChart
+                  calcA1={calcA1}
+                  calcB1={calcB1}
+                  calcA4={calcA4}
+                  calcB4={calcB4}
+                  nameA={nameA}
+                  nameB={nameB}
+                  isDark={isDark}
+                />
+              </div>
+
+              {/* Component detail cards */}
+              {hasAnyData && (
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'1.25rem', marginBottom:'1.5rem'}}>
+                  {[
+                    { offer: offerA, calc1: calcA1, calc4: calcA4, name: nameA, color: '#6366F1' },
+                    { offer: offerB, calc1: calcB1, calc4: calcB4, name: nameB, color: '#7C3AED' },
+                  ].map(({ offer, calc1, calc4, name, color }) => (
+                    <div key={name} className="card p-4">
+                      <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.875rem'}}>
+                        <span style={{width:'3px', height:'1.25rem', background:color, borderRadius:'2px', flexShrink:0}} aria-hidden="true" />
+                        <h3 style={{fontSize:'0.875rem', fontWeight:700, color: isDark ? '#E2E8F0' : '#1E293B', margin:0}}>{name}</h3>
+                      </div>
+                      {!calc1 ? (
+                        <p style={{fontSize:'0.8rem', color:'#94A3B8'}}>Enter a base salary above</p>
+                      ) : (
+                        <div style={{display:'flex', flexDirection:'column', gap:'0.4rem'}}>
+                          {Object.entries(COMP_LABELS).map(([key, label]) => {
+                            const val1 = calc1.components[key] || 0;
+                            const val4 = calc4 ? calc4.components[key] || 0 : 0;
+                            const display = key === 'signing' ? val1 : val4;
+                            if (display === 0 && val1 === 0) return null;
+                            return (
+                              <div key={key} style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem'}}>
+                                <div style={{display:'flex', alignItems:'center', gap:'0.4rem', minWidth:0}}>
+                                  <span className="comp-badge" style={{background: COMP_COLORS[key]}} aria-hidden="true" />
+                                  <span style={{fontSize:'0.775rem', color: isDark ? '#94A3B8' : '#64748B', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{label}</span>
+                                </div>
+                                <span style={{fontSize:'0.8rem', fontWeight:600, color: key === 'healthDeduction' ? '#EF4444' : (isDark ? '#E2E8F0' : '#1E293B'), whiteSpace:'nowrap'}}>
+                                  {key === 'healthDeduction' ? `−${fmt(Math.abs(val1))}` : fmt(key === 'signing' ? val1 : val4)}
+                                  {key === 'signing' && val1 > 0 ? <span style={{fontSize:'0.65rem', color:'#94A3B8', marginLeft:'0.2rem'}}>Yr1</span> : null}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* COL index reference */}
+              {colNormalize && (
+                <details className="card p-4 mb-5 no-print">
+                  <summary style={{cursor:'pointer', fontSize:'0.8125rem', fontWeight:600, color: isDark ? '#CBD5E1' : '#475569', listStyle:'none', display:'flex', alignItems:'center', gap:'0.4rem'}}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style={{transform:'rotate(0deg)', transition:'transform 0.2s'}}>
+                      <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                    Cost-of-living index reference
+                  </summary>
+                  <div style={{marginTop:'0.75rem', display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))', gap:'0.4rem 1rem'}}>
+                    {CITIES.map(city => (
+                      <div key={city} style={{display:'flex', justifyContent:'space-between', fontSize:'0.75rem', padding:'0.2rem 0', borderBottom:`1px solid ${isDark ? '#1E2D40' : '#F1F5F9'}`}}>
+                        <span style={{color: isDark ? '#94A3B8' : '#64748B'}}>{city}</span>
+                        <span style={{fontWeight:600, color: isDark ? '#E2E8F0' : '#1E293B'}}>{fmtPct(COL_INDEX[city] * 100)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          </main>
+
+          {/* ===== Footer ===== */}
+          <footer className="no-print" style={{
+            borderTop: `1px solid ${isDark ? '#1E2D40' : '#E8EEF4'}`,
+            padding:'1.25rem',
+            textAlign:'center',
+          }}>
+            <p style={{fontSize:'0.75rem', color:'#94A3B8', margin:0}}>
+              OfferLens — all calculations run locally in your browser. No data is sent anywhere.
+              &nbsp;·&nbsp;COL indices are approximate and for illustrative purposes only.
+            </p>
+          </footer>
+        </div>
+      );
+    }
+
+    // =====================================================================
+    // Mount
+    // =====================================================================
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
